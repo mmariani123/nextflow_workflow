@@ -1,2 +1,2 @@
 # nextflow_workflow
-Example RNA-Seq Nextflow workflow for Uppsala
+Teaching myself Nextflow and Gitpod - Example RNA-Seq Nextflow workflow for Uppsala
