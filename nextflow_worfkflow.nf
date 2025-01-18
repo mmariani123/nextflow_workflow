@@ -1,5 +1,45 @@
 #!/usr/bin/env nextflow
 
+/*
+ * Pipeline parameters
+ */
+
+// Primary input
+params.reads_bam = "${projectDir}/data/bam/reads_mother.bam"
+params.outdir    = "results_genomics"
+
+/*
+ * Generate BAM index file
+ */
+ 
+/*
+pull samtools docker container:
+docker pull community.wave.seqera.io/library/samtools:1.20--b5dfbd93de237464
+Then spin it up
+docker run -it -v ./data:/data community.wave.seqera.io/library/samtools:1.20--b5dfbd93de237464
+*/
+
+/*
+ * Generate BAM index file
+ */
+process SAMTOOLS_INDEX {
+
+    container 'community.wave.seqera.io/library/samtools:1.20--b5dfbd93de237464'
+
+    publishDir params.outdir, mode: 'symlink'
+
+    input:
+        path input_bam
+
+    output:
+        path "${input_bam}.bai"
+
+    script:
+    """
+    samtools index '$input_bam'
+    """
+}
+
 fastqPath = "/data/*.fastq.gz"
 
 Channel
@@ -96,7 +136,6 @@ if(params.input_type == 'paired-end'){
 	.map{ it -> [it.simpleName, it]}
 	.set{ch_reads}
 }
-
 
 process download_reference{
 
