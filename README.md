@@ -16,3 +16,8 @@ Practicing Nextflow - Example RNA-Seq Nextflow workflow.
 Here we have my Nextflow workflow (file: nextflow_workflow.nf) version running on the Ubuntu App on Windows 10 with Windows Subsystem for Linux 2 (WSL2) installed and enabled. on an ASUS PC
 ![image](https://github.com/user-attachments/assets/aa8d2539-29ca-4a72-a1a6-c13fc3fc8960)
 
+Addiitonally, one can use Gitpod to develop and test their nextflow project as well as link it to a respective GitHub project page, in this case: https://github.com/mmariani123/nextflow_workflow . Changes to the Nextflow files (.nf), for example can then be pushed to GitHub
+![nextfoww_example_workflow](https://github.com/user-attachments/assets/f3813473-4fae-40cf-beba-cd20d323f2e3)
+
+
+
