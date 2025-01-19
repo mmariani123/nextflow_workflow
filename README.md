@@ -17,7 +17,5 @@ Here we have my Nextflow workflow (file: nextflow_workflow.nf) version running o
 ![image](https://github.com/user-attachments/assets/aa8d2539-29ca-4a72-a1a6-c13fc3fc8960)
 
 Addiitonally, one can use Gitpod to develop and test their nextflow project as well as link it to a respective GitHub project page, in this case: https://github.com/mmariani123/nextflow_workflow . Changes to the Nextflow files (.nf), for example can then be pushed to GitHub
-![nextfoww_example_workflow](https://github.com/user-attachments/assets/f3813473-4fae-40cf-beba-cd20d323f2e3)
-
-
+![gitpod_commit_1](https://github.com/user-attachments/assets/0b8fab31-85cc-409b-b84a-f0fc66c7548c)
 
