@@ -8,7 +8,7 @@ Here we have an example where I (as many other computational biologists and bioi
 
 
 Using the Nextflow architecture, we can create and organize workflows based on these scripts to enhance code reusability and portability (e.g. among collaboraters or across systems)
-Here I present my own end-to-end RNA-Seq analysis Nextflow workflow, using the publicly available Mus musculus RNA-Seq data from the now-classic "A Beginner’s Guide to Analysis of RNA Sequencing Data" (PMID: 29624415) - USA, National Institutes of Health (NIH), National Library of Medicine (NLM) Accession PRJNA450151 (https://www.ncbi.nlm.nih.gov/bioproject/PRJNA450151)
+Here I present my own end-to-end RNA-Seq analysis Nextflow workflow, using my own scripts that I had created for various previous (bulk) RNA-Seq analyses, and using the publicly available Mus musculus RNA-Seq data (.fastq format) from the now-classic "A Beginner’s Guide to Analysis of RNA Sequencing Data" (PMID: 29624415) - USA, National Institutes of Health (NIH), National Library of Medicine (NLM) Accession PRJNA450151 (https://www.ncbi.nlm.nih.gov/bioproject/PRJNA450151)
 
 Practicing Nextflow - Example RNA-Seq Nextflow workflow.
 ![nextfoww_example_workflow](https://github.com/user-attachments/assets/01c00510-54d2-462c-9599-b37d5c8e3940)
