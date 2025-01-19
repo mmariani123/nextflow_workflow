@@ -12,3 +12,7 @@ Here I present my own end-to-end RNA-Seq analysis Nextflow workflow, using the p
 
 Practicing Nextflow - Example RNA-Seq Nextflow workflow.
 ![nextfoww_example_workflow](https://github.com/user-attachments/assets/01c00510-54d2-462c-9599-b37d5c8e3940)
+
+Here we have my Nextflow workflow (file: nextflow_workflow.nf) version running on the Ubuntu App on Windows 10 with Windows Subsystem for Linux 2 (WSL2) installed and enabled. on an ASUS PC
+![image](https://github.com/user-attachments/assets/aa8d2539-29ca-4a72-a1a6-c13fc3fc8960)
+
