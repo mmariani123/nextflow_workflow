@@ -12,7 +12,7 @@ PRJNA450151 (https://www.ncbi.nlm.nih.gov/bioproject/PRJNA450151)
 
 ![nextfoww_example_workflow](https://github.com/user-attachments/assets/01c00510-54d2-462c-9599-b37d5c8e3940)
 
-Here we have my Nextflow workflow (file: nextflow_workflow.nf) version running on the Ubuntu App on Windows 10 with Windows Subsystem for Linux 2 (WSL2) installed and enabled. Deveopment and testing has been performed on an ASUS PC with 64GB RAM and 1TB hard drive.
+Here we have my Nextflow workflow (file: nextflow_workflow.nf) version running on the Ubuntu App on Windows 10 with Windows Subsystem for Linux 2 (WSL2) installed and enabled. Deveopment and testing has been performed on an ASUS PC with 64GB RAM and 1TB hard drive. Note development within dedicated Miniconda environment: "nextflow_testing".
 
 ![image](https://github.com/user-attachments/assets/aa8d2539-29ca-4a72-a1a6-c13fc3fc8960)
 
