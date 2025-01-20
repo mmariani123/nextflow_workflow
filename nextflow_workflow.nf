@@ -109,7 +109,7 @@ process STAR_ALIGNMENT {
 	--genomeDir         ${fasta} \
 	--readFilesIn       ${fastq} \
 	--readFilesCommand  "zcat" \
-	--outFileNamePrefix ${params.outdir}"/"${sampleid}".mm39." \
+	--outFileNamePrefix ${params.outdir}"/alignment/"${sampleid}".mm39." \
 	--outSAMtype        BAM SortedByCoordinate
 	#>"star.index.mm39.log.txt"
 	"""
@@ -119,24 +119,28 @@ process SAMTOOLS_WORK {
 
  	//Generate samtools files:
     
+	//docker pull community.wave.seqera.io/library/samtools:1.20--b5dfbd93de237464
 	container 'community.wave.seqera.io/library/samtools:1.20--b5dfbd93de237464'
 
-    publishDir "${params.outdir}/results/alignment", mode: 'move'
+    publishDir "${params.outdir}/alignment", mode: 'copy'
 
 	input:
-    tuple val(sample), path(sample_path)
+    tuple val(sample), path(bam)
 
     output:
-    tuple val(sample), path(out1)
-    tuple val(sample), path(out2)
-    tuple val(sample), path(out3)
-
+    path "${sample}.sorted.bam"
+    path "${sample}.sorted.bam.bai"
+    path "${sample}.idxstats"
+	path "${sample}.stats"
+	path "${sample}.flagstat"
+	
     script:
     """
-    samtools index    ${sample_path} 
-	samtools idxstats ${sample_path} > ${out1}"/"${sample}".idxstats"
-	samtools stats    ${sample_path} > ${out2}"/"${sample}".stats"
-	samtools flagstat ${sample_path} > ${out3}"/"${sample}".flagstat"
+	samtools sort     ${bam} -o "${sample}.sorted.bam"
+    samtools index    ${bam}".sorted.bam"
+	samtools idxstats ${bam}".sorted.bam" > "${sample}".idxstats"
+	samtools stats    ${bam}".sorted.bam" > "${sample}".stats"
+	samtools flagstat ${bam}".sorted.bam" > "${sample}".flagstat"
 	"""
 }   
 
