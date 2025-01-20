@@ -134,14 +134,15 @@ process SAMTOOLS_WORK {
 	path "${sample}.stats"
 	path "${sample}.flagstat"
 	
-    script:
-    """
-	samtools sort     ${bam} -o "${sample}.sorted.bam"
-    samtools index    ${bam}".sorted.bam"
-	samtools idxstats ${bam}".sorted.bam" > "${sample}".idxstats"
-	samtools stats    ${bam}".sorted.bam" > "${sample}".stats"
-	samtools flagstat ${bam}".sorted.bam" > "${sample}".flagstat"
-	"""
+    shell:
+    '''
+	dirName="$(dirname !{bam})"
+	samtools sort     !{bam} -o "!{sample}.sorted.bam"
+    samtools index    "${dirName}/!{sample}.sorted.bam"
+	samtools idxstats "${dirName}/!{sample}.sorted.bam" > "!{sample}".idxstats"
+	samtools stats    "${dirName}/!{sample}.sorted.bam" > "!{sample}".stats"
+	samtools flagstat "${dirName}/!{sample}.sorted.bam" > "!{sample}".flagstat"
+	'''
 }   
 
 Channel
