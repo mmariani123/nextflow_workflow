@@ -8,6 +8,12 @@
 params.reads_bam = "${projectDir}/data/bam/reads_mother.bam"
 params.outdir    = "results_genomics"
 
+//https://github.com/nextflow-io/nextflow/issues/2082
+//Note that: Nextflow does not have its own syntax parser 
+//but instead uses AST manipulation techniques to extend 
+//the Groovy syntax into Nextflow DS
+
+
 /*
  * Generate BAM index file
  */

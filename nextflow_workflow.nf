@@ -4,34 +4,37 @@
 // Working with Nextflow. Working on developing RNA-Seq pipeline
 // Testing on Windows Ubuntu App, WSL2, root directory  
 
-//https://github.com/nextflow-io/nextflow/issues/2082
-//Note that: Nextflow does not have its own syntax parser 
-//but instead uses AST manipulation techniques to extend 
-//the Groovy syntax into Nextflow DS
-
 nextflow.enable.dsl=2
+
+//Run command on linux shell:
+//$HOME/nextflow-24.10.3-dist run -w ./nextflow_workflow $HOME/nextflow_workflow/nextflow_workflow.nf
+//NB: setting "work" dir explicitly above
 
 /*
 * Pipeline parameters
 */
 
 //Primary input
-$projectDir      = "/root/nextflow_workflow"
-params.outdir    = "${projectDir}/output"
-params.fastq     = "${projectDir}/fastq"
-params.reference = "${projectDir}/reference"
-params.fasta     = "${projectDir}/reference/mm39.fa"
-//params.index     = "${projectDir}/reference/mm39.fai"
-params.bams      = "${projectDir}/output/*.bam"
-params.gtf       = "${projectDir}/reference/refGene.gtf"
-params.type      = "single"
-params.frag_len  = "8"
-params.threads   = "8"
-params.overHang  = "75"
-params.index_star = "false"
-params.run_fastqc = "false"
-params.run_star_align = "true"
-params.run_samtools = "false"
+$projectDir                 = "/root/nextflow_workflow"
+params.outdir               = "${projectDir}/output"
+params.fastq                = "${projectDir}/fastq"
+params.reference            = "${projectDir}/reference"
+params.fasta                = "${projectDir}/reference/mm39.fa"
+//params.index              = "${projectDir}/reference/mm39.fai"
+params.bams                 = "${projectDir}/output/alignment"
+params.gtf                  = "${projectDir}/reference/refGene.gtf"
+params.type                 = "single"
+params.frag_len             = "8"
+params.threads              = "8"
+params.overHang             = "75"
+params.index_star           = "false"
+params.run_fastqc           = "false"
+params.run_star_align       = "false"
+params.run_samtools         = "true"
+params.run_feature_counts   = "false"
+params.run_deseq2           = "false"
+params.run_cluster_profiler = "false"
+params.run_final_analyses   = "false"
 
 //Accessory files
 //params.reference        = "${projectDir}/data/ref/ref.fasta"
@@ -108,7 +111,7 @@ process STAR_ALIGNMENT {
 	--readFilesCommand  "zcat" \
 	--outFileNamePrefix ${params.outdir}"/"${sampleid}".mm39." \
 	--outSAMtype        BAM SortedByCoordinate
-	//"star.index.mm39.logs.txt.log.txt"
+	#>"star.index.mm39.log.txt"
 	"""
 }
 
@@ -118,25 +121,24 @@ process SAMTOOLS_WORK {
     
 	container 'community.wave.seqera.io/library/samtools:1.20--b5dfbd93de237464'
 
-    publishDir params.outdir, mode: 'symlink'
+    publishDir "${params.outdir}/results/alignment", mode: 'move'
 
-    input:
-        path input_bam
+	input:
+    tuple val(sample), path(sample_path)
 
     output:
-        path "${input_bam}.bai"
-		path "${input_bam}.idxstats"
-		path "${input_bam}.stats"
-		path "${input_bam}.flagstats"
+    tuple val(sample), path(out1)
+    tuple val(sample), path(out2)
+    tuple val(sample), path(out3)
 
     script:
     """
-    samtools index ${input_bam}
-	samtools idxstats ${input_bam}
-	samtools stats ${input_bam}
-	samtools flagstat ${input_bam}
-    """
-}
+    samtools index    ${sample_path} 
+	samtools idxstats ${sample_path} > ${out1}"/"${sample}".idxstats"
+	samtools stats    ${sample_path} > ${out2}"/"${sample}".stats"
+	samtools flagstat ${sample_path} > ${out3}"/"${sample}".flagstat"
+	"""
+}   
 
 Channel
   .fromPath("${params.fastq}/*{.fastq.gz,.fq.gz,.fastq,.fq}")
@@ -144,28 +146,17 @@ Channel
   .ifEmpty { error "Cannot find any fastq files in ${params.fastq}" }
   .set { fastq_files }
   
-star_fasta = file(params.fasta)
-star_gtf   = file(params.gtf)
+Channel
+  .fromPath("${params.bams}/*{.bam,.sam}")
+  .map { it -> tuple( it.simpleName, it ) }
+  .ifEmpty { error "Cannot find any bam files in ${params.bam}" }
+  .set { bam_files }
+  
+star_fasta     = file(params.fasta)
+star_gtf       = file(params.gtf)
 star_reference = file(params.reference)
-bams_ch	   = Channel.fromPath(params.bams) 
 
 workflow {
-
-	// fastq_ch           = Channel.fromFilePath(params.fastq, checkIfExists: true)
-	// fasta_ch      	  = Channel.fromPath(params.fasta, checkIfExists: true)
-	// gtf_ch             = Channel.fromPath(params.gtf, checkIfExists: true)
-	// Load the file paths for the accessory files (reference and intervals)
-    // I manually set some channels above
-	// ref_file           = file(params.fasta)
-    // ref_index_file     = file(params.index)
-	// fasta_ch = Channel.fromPath(params.fasta)
-	// fasta_ch.view()
-	// fasta_ch = Channel.of(params.fasta)
-	// reference_ch = Channel.fromPath(params.reference)
-	// reference_ch.view()
-	// gtf_ch   = Channel.fromPath(params.gtf)
-	// gtf_ch.view()
-	// reference_ch = Channel.fromPath(params.reference)
 	
 	if ( params.index_star == 'true' ){
 	//	if !(file(params.index_star, checkIfExists: true)) { // is ! breaking it here?
@@ -191,7 +182,27 @@ workflow {
 	}
 	
 	if ( params.run_samtools == 'true' ){
-		SAMTOOLS_WORK(bams_ch)
+	
+		SAMTOOLS_WORK(bam_files)
+		
+	}
+	
+	if ( params.run_feature_counts == 'true' ){
+	
+	
+		
+	}
+	
+	if ( params.run_cluster_profiler == 'true' ){
+	
+	
+		
+	}
+	
+	if ( params.run_final_analyses == 'true' ){
+	
+	
+		
 	}
 	
 }
