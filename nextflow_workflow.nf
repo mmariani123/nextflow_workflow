@@ -30,8 +30,8 @@ params.overHang             = "75"
 params.index_star           = "false"
 params.run_fastqc           = "false"
 params.run_star_align       = "false"
-params.run_samtools         = "true"
-params.run_feature_counts   = "false"
+params.run_samtools         = "false"
+params.run_feature_counts   = "true"
 params.run_deseq2           = "false"
 params.run_cluster_profiler = "false"
 params.run_final_analyses   = "false"
@@ -139,11 +139,36 @@ process SAMTOOLS_WORK {
 	dirName="\$(dirname ${bam})"
 	samtools sort     ${bam} -o "!{sample}.sorted.bam"
     samtools index    "\${dirName}/${sample}.sorted.bam"
-	samtools idxstats "\${dirName}/${sample}.sorted.bam" > "${sample}".idxstats"
-	samtools stats    "\${dirName}/${sample}.sorted.bam" > "${sample}".stats"
-	samtools flagstat "\${dirName}/${sample}.sorted.bam" > "${sample}".flagstat"
+	samtools idxstats "\${dirName}/${sample}.sorted.bam" > "${sample}.idxstats"
+	samtools stats    "\${dirName}/${sample}.sorted.bam" > "${sample}.stats"
+	#The output can be visualized using plot-bamstats.
+	samtools flagstat "\${dirName}/${sample}.sorted.bam" > "${sample}.flagstat"
 	"""
 }   
+
+process FEATURE_COUNTS {
+
+	publishDir "${params.outdir}/counts", mode: 'copy'
+
+	input:
+    path gtf
+	tuple val(sample), path(bam)
+	
+	output:
+    path "${sample}.counts"
+	
+	script:
+	"""
+	featureCounts \
+	-s "2" \
+	-T ${params.threads} \
+	-a ${gtf} \
+	-o ${sample}".counts" \
+	${bam}
+	#NB: remember with -s parameter want to ensure reverse strandedness of original reads
+	"""
+
+}
 
 Channel
   .fromPath("${params.fastq}/*{.fastq.gz,.fq.gz,.fastq,.fq}")
@@ -157,6 +182,12 @@ Channel
   .ifEmpty { error "Cannot find any bam files in ${params.bam}" }
   .set { bam_files }
   
+Channel
+  .fromPath("${params.bams}/*{.sorted.bam,.sorted.sam}")
+  .map { it -> tuple( it.simpleName, it ) }
+  .ifEmpty { error "Cannot find any sorted bam files in ${params.bam}" }
+  .set { sorted_bam_files }
+ 
 star_fasta     = file(params.fasta)
 star_gtf       = file(params.gtf)
 star_reference = file(params.reference)
@@ -194,7 +225,7 @@ workflow {
 	
 	if ( params.run_feature_counts == 'true' ){
 	
-	
+		FEATURE_COUNTS(star_gtf, sorted_bam_files)
 		
 	}
 	
