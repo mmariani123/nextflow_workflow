@@ -1,7 +1,11 @@
 #!/usr/bin/env Rscript
 
-
+library(magrittr)
+library(dplyr)
+library(tidyr)
 library(DESeq2)
+library(clusterProfiler)
+library(org.Hs.eg.db)
 
 #counts <- featureCounts(bams, blablabla_restofcommand)$counts
 #deseqdata <- DESeqDataSetFromMatrix(countData=counts, colData=sampleInfo, design=~condition)
@@ -30,6 +34,11 @@ write.csv(countsMatrix,
 
 coldata <- read.table("C:/Users/mmari/OneDrive/Documents/GitHub/nextflow_workflow/output/samples_for_deseq2.txt")
 
+#Do some low count pre-filtering: (we want 3 or more samples to have 5 or more genes)
+dds <- estimateSizeFactors(dds)
+idx <- rowSums( counts(dds, normalized=TRUE) >= 5 ) >= 3
+dds <- dds[idx,]
+
 dds <- DESeqDataSetFromMatrix(countData = countsMatrix,
                               colData = coldata,
                               design= ~ condition)
@@ -39,3 +48,35 @@ res <- results(dds, name="condition_2h_vs_24h")
 # or to shrink log fold changes association with condition:
 res <- lfcShrink(dds, coef="condition_2h_vs_24h", type="apeglm")
 
+# omit NAs from results:
+res <- na.omit(res)
+
+res[,abs(res$log2FoldChange) > 1 & res$padj <= 0.05] 
+
+res2v24Sig <- res[which((res$padj < 0.05) & abs(res$log2FoldChange) >= 1),]
+
+res2v24Sig <- res2v24Sig[
+  with(res2v24Sig , order(log2FoldChange, padj)),
+]
+
+res2v24SigDf <- as.data.frame(res2v24Sig)
+res2v24SigDfTopDown <- res2v24SigDf[res2v24SigDf$log2FoldChange<=-1,] %>% arrange(padj) %>% top_n(100)
+res2v24SigDfTopUp   <- res2v24SigDf[res2v24SigDf$log2FoldChange>=1,]  %>% arrange(padj) %>% top_n(100)
+
+geneList = sort(geneList, decreasing = TRUE)
+
+genesDown <- gseGO(geneList = rownames(res2v24SigDfTopDown),
+              OrgDb         = org.Hs.eg.db,
+              ont           = "CC",
+              minGSSize     = 100,
+              maxGSSize     = 500,
+              pvalueCutoff  = 0.05,
+              verbose       = FALSE)
+
+genesUp <- gseGO(geneList = rownames(res2v24SigDfTopUp),
+                   OrgDb         = org.Hs.eg.db,
+                   ont           = "CC",
+                   minGSSize     = 100,
+                   maxGSSize     = 500,
+                   pvalueCutoff  = 0.05,
+                   verbose       = FALSE)
