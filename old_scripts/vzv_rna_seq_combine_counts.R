@@ -1,5 +1,8 @@
 #!/usr/bin/env Rscript
 
+#counts <- featureCounts(bams, blablabla_restofcommand)$counts
+#deseqdata <- DESeqDataSetFromMatrix(countData=counts, colData=sampleInfo, design=~condition)
+
 ##setwd("/slipstream/home/mmariani/projects/hhv6_rna/output/bowtie2_counts")
 setwd("/slipstream/home/mmariani/projects/vzv_cohrs_rna_seq_hfl_resequence_08072019/output_hg38")
 
