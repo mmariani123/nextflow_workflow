@@ -60,23 +60,69 @@ res2v24Sig <- res2v24Sig[
 ]
 
 res2v24SigDf <- as.data.frame(res2v24Sig)
-res2v24SigDfTopDown <- res2v24SigDf[res2v24SigDf$log2FoldChange<=-1,] %>% arrange(padj) %>% top_n(100)
-res2v24SigDfTopUp   <- res2v24SigDf[res2v24SigDf$log2FoldChange>=1,]  %>% arrange(padj) %>% top_n(100)
 
-geneList = sort(geneList, decreasing = TRUE)
+genes.df <- bitr(toupper(rownames(res2v24SigDf)), 
+                    fromType = "SYMBOL",
+                    toType = "ENTREZID",
+                    OrgDb = org.Hs.eg.db
+)
+rownames(genes.df) <- genes.df$SYMBOL
+#Remember we may not get complete mapping
 
-genesDown <- gseGO(geneList = rownames(res2v24SigDfTopDown),
-              OrgDb         = org.Hs.eg.db,
-              ont           = "CC",
-              minGSSize     = 100,
-              maxGSSize     = 500,
-              pvalueCutoff  = 0.05,
-              verbose       = FALSE)
+rownames(res2v24SigDf) <- toupper(rownames(res2v24SigDf))
 
-genesUp <- gseGO(geneList = rownames(res2v24SigDfTopUp),
-                   OrgDb         = org.Hs.eg.db,
-                   ont           = "CC",
-                   minGSSize     = 100,
-                   maxGSSize     = 500,
-                   pvalueCutoff  = 0.05,
-                   verbose       = FALSE)
+merged <- merge(res2v24SigDf,
+                genes.df,
+                by="row.names",
+                all.x=TRUE,
+                all.y=TRUE)
+
+merged <- na.omit(merged)
+
+mergedDown <- merged[merged$log2FoldChange<=-1,] %>% arrange(padj) #%>% top_n(100)
+mergedUp   <- merged[merged$log2FoldChange>=1,]  %>% arrange(padj) #%>% top_n(100)
+
+genesDown <- enrichGO(gene          = mergedDown$ENTREZID,
+                      OrgDb         = org.Hs.eg.db,
+                      keyType       = 'ENTREZID',
+                      ont           = "BP",
+                      pAdjustMethod = "BH",
+                      pvalueCutoff  = 0.01,
+                      qvalueCutoff  = 0.05)
+
+genesUp <- enrichGO(gene            = mergedUp$ENTREZID,
+                      OrgDb         = org.Hs.eg.db,
+                      keyType       = 'ENTREZID',
+                      ont           = "BP",
+                      pAdjustMethod = "BH",
+                      pvalueCutoff  = 0.01,
+                      qvalueCutoff  = 0.05)
+
+#clusterProfiler::goplot(genesDown, environment())
+#clusterProfiler::goplot(genesUp)
+
+plotDown <- dotplot(genesDown, showCategory=10)
+plotUp   <- dotplot(genesUp, showCategory=10)
+
+cowplot::plot_grid(plotDown,
+                   plotUp)
+
+plotDown + plotUp + patchwork::plot_layout(guides = "collect") +
+  scale_fill_continuous(limits = range(c(plotDown$data$p.adjust, plotUp$data$p.adjust)))
+
+library(ggpubr)
+
+pathwaysPlotOut <- ggarrange(
+  plotDown, 
+  plotUp,
+  align = "h", 
+  labels = c("Genes down-regulated pathways", "Genes up-regulated pathways"),
+  common.legend = TRUE,
+  legend="right"
+)
+
+ggsave(plot=pathwaysPlotOut,
+       filename = "C:/Users/mmari/OneDrive/Documents/GitHub/nextflow_workflow/output/analysis/pathways.jpg",
+       width = 12,
+       height = 8,
+       device = "png")
