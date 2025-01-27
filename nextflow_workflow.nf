@@ -170,6 +170,30 @@ process FEATURE_COUNTS {
 
 }
 
+process DESEQ2 {
+
+	publishDir "${params.outdir}/deseq2", mode: 'copy'
+
+	input:
+    path gtf
+	tuple val(sample), path(bam)
+	
+	output:
+    path "${sample}.counts"
+	
+	script:
+	"""
+	featureCounts \
+	-s "2" \
+	-T ${params.threads} \
+	-a ${gtf} \
+	-o ${sample}".counts" \
+	${bam}
+	#NB: remember with -s parameter want to ensure reverse strandedness of original reads
+	"""
+
+}
+
 Channel
   .fromPath("${params.fastq}/*{.fastq.gz,.fq.gz,.fastq,.fq}")
   .map { it -> tuple( it.simpleName, it ) }
@@ -231,7 +255,7 @@ workflow {
 	
 	if ( params.run_cluster_profiler == 'true' ){
 	
-	
+		DESEQ2(counts_files)
 		
 	}
 	
