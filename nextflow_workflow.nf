@@ -37,6 +37,7 @@ params.run_star_align       = "false"
 params.run_samtools         = "false"
 params.run_feature_counts   = "false"
 params.run_deseq2           = "true"
+params.run_cluster_profiler = "false"
 params.run_final_analyses   = "false"
 
 //Accessory files
@@ -200,11 +201,54 @@ process DESEQ2{
 	//BiocManager::install('cowplot')
 	//BiocManager::install('patchwork')
 	//BiocManager::install('ggpubr')
+	//BiocManager::install("apeglm") for use with DESEQ2
+	//BiocManager::install("pheatmap") for use with DESEQ2
 	
 	conda 'r-magrittr'
 	conda 'r-dplyr'
 	conda 'r-tidyr'
 	conda 'r-DESeq2'
+	conda 'r-apeglm'
+	conda 'r-pheatmap'
+	//conda 'r-clusterProfiler'
+	conda 'r-org.Hs.eg.db'
+	conda 'r-ggplot2'
+	conda 'r-cowplot'
+	conda 'r-patchwork'
+	//conda 'r-ggpubr'
+
+    input:
+    path countsInputDir
+	//path countsOutputDir
+	path inputSamplesFile
+	
+	output:
+	//path "combined_counts_matrix.csv" into csv_ch
+	//path "samples_for_deseq2.txt" into txt_ch
+	//path "pathways.png" into png_ch
+	path "combined_counts_matrix.csv" //, emit: csv_file
+	path "deseq2_df.txt"
+	path "deseq2_heatmap.png"
+	path "deseq2_pca.png"
+	//path "pathways.png" //, emit: png_file
+	//file("*.csv") into csv_ch
+	//file("*.png") into png_ch
+    //path "*.csv", emit: csv_files
+	//path "*.png", emit: png_files
+	
+	script:
+    """
+	deseq2.R "${countsInputDir}" "${inputSamplesFile}" "combined_counts_matrix.csv" "deseq2_df.txt" "deseq2_heatmap.png" "deseq2_pca.png"
+	"""
+}
+
+process CLUSTER_PROFILER{
+
+    publishDir "${params.deseq2}", mode: 'copy'
+	
+	conda 'r-magrittr'
+	conda 'r-dplyr'
+	conda 'r-tidyr'
 	//conda 'r-clusterProfiler'
 	conda 'r-org.Hs.eg.db'
 	conda 'r-ggplot2'
@@ -230,7 +274,7 @@ process DESEQ2{
 	
 	script:
     """
-	deseq2.R "${countsInputDir}" "${inputSamplesFile}" combined_counts_matrix.csv
+	clusterProfiler.R "${countsInputDir}" "${inputSamplesFile}" combined_counts_matrix.csv
 	"""
 }
 
@@ -264,6 +308,7 @@ def deseq2_samples = Channel.fromPath(params.deseq2_samples_file)
 //deseq2_file1   = file("${params.deseq2}/combined_counts_matrix.csv")
 //deseq2_file2   = file("${params.deseq2}/samples_for_deseq2.txt")
 //deseq2_file3   = file("${params.deseq2}/pathways.png")
+def cluster_rofiler_input = file("${params.clusterProfiler}")
 
 workflow {
 	
@@ -306,6 +351,12 @@ workflow {
 	
 		//DESEQ2(deseq2_input, deseq2_output, deseq2_samples)
 		DESEQ2(deseq2_input, deseq2_samples)
+		
+	}
+	
+	if ( params.run_cluster_profiler == 'true' ){
+	
+		CLUSTER_PROFILER(cluster_rofiler_input)
 		
 	}
 	

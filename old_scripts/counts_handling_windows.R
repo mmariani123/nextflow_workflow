@@ -1,5 +1,6 @@
 #!/usr/bin/env Rscript
 
+library(pheatmap)
 library(magrittr)
 library(dplyr)
 library(tidyr)
@@ -32,24 +33,46 @@ write.csv(countsMatrix,
           row.names=FALSE,
           quote=FALSE)
 
-coldata <- read.table("C:/Users/mmari/OneDrive/Documents/GitHub/nextflow_workflow/output/samples_for_deseq2.txt")
+coldata <- read.table("C:/Users/mmari/OneDrive/Documents/GitHub/nextflow_workflow/output/deseq2/samples_for_deseq2.txt")
+
+dds <- DESeqDataSetFromMatrix(countData = countsMatrix,
+                              colData = coldata,
+                              design= ~ condition)
 
 #Do some low count pre-filtering: (we want 3 or more samples to have 5 or more genes)
 dds <- estimateSizeFactors(dds)
 idx <- rowSums( counts(dds, normalized=TRUE) >= 5 ) >= 3
 dds <- dds[idx,]
 
-dds <- DESeqDataSetFromMatrix(countData = countsMatrix,
-                              colData = coldata,
-                              design= ~ condition)
 dds <- DESeq(dds)
 resultsNames(dds) # lists the coefficients
 res <- results(dds, name="condition_2h_vs_24h")
 # or to shrink log fold changes association with condition:
 res <- lfcShrink(dds, coef="condition_2h_vs_24h", type="apeglm")
 
+#get results as dataframe:
+res.df <- res@listData
+res.df <- do.call(cbind,res.df)
 # omit NAs from results:
-res <- na.omit(res)
+
+res.df <- na.omit(res.df)
+
+#log2(n + 1) transform
+ntd <- normTransform(dds)
+
+#Create heatmap
+select <- order(rowMeans(counts(dds,normalized=TRUE)),
+                decreasing=TRUE)[1:20]
+
+#df <- as.data.frame(colData(dds)[,c("condition","type")])
+df <- as.data.frame(colData(dds)[,c("condition")])
+rownames(df) <- rownames(colData(dds))
+
+pheatmap(assay(ntd)[select,], 
+         cluster_rows=FALSE, 
+         show_rownames=FALSE,
+         cluster_cols=FALSE, 
+         annotation_col=df)
 
 res[,abs(res$log2FoldChange) > 1 & res$padj <= 0.05] 
 
