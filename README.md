@@ -30,6 +30,10 @@ It is important to note that the free tier of Github only allows for a maximum o
 
 The pipeline will conclude with counting up how many fastq reads align to the various genes (contained in the .gtf file) using the featureCounts routine that is part of the Subread software package. These ".counts" files can then used as input to DESeq2 for differential gene analysis between the 0, 2, and 24 hour reperfusion groups (Again, see PMID: 29624415 for the input RNA-seq data used for this workflow). The staistically significant differentially expressed genes output by DESeq2 can then be used as input to the clusterProfiler software package to identify significantly up- and down-regulated gene pathways. 
 
+Here we see the results of the above mentioned pathway analysis (top 10 most significant pathways) from significantly differentially expressed genes up and down identified between the 2hr and 24hr reperfusion groups using DESeq2
+
+![pathways](https://github.com/user-attachments/assets/4aa4532f-e2ce-4161-b7d5-6accabfba282)
+
 More to come!
 
 
