@@ -2,12 +2,13 @@
 
 // Michael P. Mariani PhD, 2025
 // Working with Nextflow. Working on developing RNA-Seq pipeline
-// Testing on Windows Ubuntu App, WSL2, root directory  
+// Testing on Windows 10 Ubuntu App, WSL2, root directory  
 
 nextflow.enable.dsl=2
 
-//Run command on linux shell:
-//$HOME/nextflow-24.10.3-dist run -w ./nextflow_workflow $HOME/nextflow_workflow/nextflow_workflow.nf
+//Run commands on linux shell:
+//conda activate nextflow_testing #activate our dedicated conda environment
+//$HOME/nextflow-24.10.3-dist run -w ./nextflow_workflow/work $HOME/nextflow_workflow/nextflow_workflow.nf -with-report -with-timeline -with-dag flowchart.png
 //NB: setting "work" dir explicitly above
 
 /*
@@ -15,13 +16,16 @@ nextflow.enable.dsl=2
 */
 
 //Primary input
-$projectDir                 = "/root/nextflow_workflow"
+projectDir                 = "/root/nextflow_workflow"
 params.outdir               = "${projectDir}/output"
 params.fastq                = "${projectDir}/fastq"
 params.reference            = "${projectDir}/reference"
 params.fasta                = "${projectDir}/reference/mm39.fa"
 //params.index              = "${projectDir}/reference/mm39.fai"
 params.bams                 = "${projectDir}/output/alignment"
+params.counts               = "${projectDir}/output/counts"
+params.deseq2               = "${projectDir}/output/deseq2"
+params.deseq2_samples_file  = "${projectDir}/output/deseq2/samples_for_deseq2.txt"
 params.gtf                  = "${projectDir}/reference/refGene.gtf"
 params.type                 = "single"
 params.frag_len             = "8"
@@ -31,9 +35,8 @@ params.index_star           = "false"
 params.run_fastqc           = "false"
 params.run_star_align       = "false"
 params.run_samtools         = "false"
-params.run_feature_counts   = "true"
-params.run_deseq2           = "false"
-params.run_cluster_profiler = "false"
+params.run_feature_counts   = "false"
+params.run_deseq2           = "true"
 params.run_final_analyses   = "false"
 
 //Accessory files
@@ -148,6 +151,7 @@ process SAMTOOLS_WORK {
 
 process FEATURE_COUNTS {
 
+	//Can use featureCouts container or install with CONDA as usual 
 	publishDir "${params.outdir}/counts", mode: 'copy'
 
 	input:
@@ -170,28 +174,64 @@ process FEATURE_COUNTS {
 
 }
 
-process DESEQ2 {
+process DESEQ2{
 
-	publishDir "${params.outdir}/deseq2", mode: 'copy'
+    publishDir "${params.deseq2}", mode: 'copy'
 
-	input:
-    path gtf
-	tuple val(sample), path(bam)
+	//Make sure R and libraries are installed in conda env:
+	//install -c conda-forge r-essentials
+	//then run R and install bioconductor
+	//if (!requireNamespace("BiocManager", quietly = TRUE))
+    //install.packages("BiocManager")
+	//or ...
+	//conda install -c conda-forge 'r-magrittr'
+	//etc.
+	
+	//BiocManager::install('magrittr')
+	//BiocManager::install('dplyr')
+	//BiocManager::install('tidyr')
+	//BiocManager::install('DESeq2')
+	//BiocManager::isntall('fgsea')
+    //BiocManager::install('DOSE')
+	//BiocManager::install('enrichplot')
+	//BiocManager::install('clusterProfiler')
+	//BiocManager::install('org.Hs.eg.db')
+	//BiocManager::install('ggplot2')
+	//BiocManager::install('cowplot')
+	//BiocManager::install('patchwork')
+	//BiocManager::install('ggpubr')
+	
+	conda 'r-magrittr'
+	conda 'r-dplyr'
+	conda 'r-tidyr'
+	conda 'r-DESeq2'
+	//conda 'r-clusterProfiler'
+	conda 'r-org.Hs.eg.db'
+	conda 'r-ggplot2'
+	conda 'r-cowplot'
+	conda 'r-patchwork'
+	//conda 'r-ggpubr'
+
+    input:
+    path countsInputDir
+	//path countsOutputDir
+	path inputSamplesFile
 	
 	output:
-    path "${sample}.counts"
+	//path "combined_counts_matrix.csv" into csv_ch
+	//path "samples_for_deseq2.txt" into txt_ch
+	//path "pathways.png" into png_ch
+	path "combined_counts_matrix.csv" //, emit: csv_file
+	//path "pathways.png" //, emit: png_file
+	//file("*.csv") into csv_ch
+	//file("*.png") into png_ch
+    //path "*.csv", emit: csv_files
+	//path "*.png", emit: png_files
 	
 	script:
+    """
+	deseq2.R "${countsInputDir}" "${inputSamplesFile}" combined_counts_matrix.csv
 	"""
-	featureCounts \
-	-s "2" \
-	-T ${params.threads} \
-	-a ${gtf} \
-	-o ${sample}".counts" \
-	${bam}
-	#NB: remember with -s parameter want to ensure reverse strandedness of original reads
-	"""
-
 }
 
 Channel
@@ -211,10 +251,19 @@ Channel
   .map { it -> tuple( it.simpleName, it ) }
   .ifEmpty { error "Cannot find any sorted bam files in ${params.bam}" }
   .set { sorted_bam_files }
- 
+  
 star_fasta     = file(params.fasta)
 star_gtf       = file(params.gtf)
 star_reference = file(params.reference)
+//deseq2_input   = file(params.counts)
+//deseq2_output  = file(params.deseq2)
+//deseq2_samples = file(params.deseq2_samples_file)
+def deseq2_input = Channel.fromPath(params.counts)
+//def deseq2_output = Channel.fromPath(params.deseq2)
+def deseq2_samples = Channel.fromPath(params.deseq2_samples_file)
+//deseq2_file1   = file("${params.deseq2}/combined_counts_matrix.csv")
+//deseq2_file2   = file("${params.deseq2}/samples_for_deseq2.txt")
+//deseq2_file3   = file("${params.deseq2}/pathways.png")
 
 workflow {
 	
@@ -253,9 +302,10 @@ workflow {
 		
 	}
 	
-	if ( params.run_cluster_profiler == 'true' ){
+	if ( params.run_deseq2 == 'true' ){
 	
-		DESEQ2(counts_files)
+		//DESEQ2(deseq2_input, deseq2_output, deseq2_samples)
+		DESEQ2(deseq2_input, deseq2_samples)
 		
 	}
 	
